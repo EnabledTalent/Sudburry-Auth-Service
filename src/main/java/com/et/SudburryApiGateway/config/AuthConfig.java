@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,6 +26,7 @@ public class AuthConfig {
                     .and()
                     .csrf(csrf -> csrf.disable())
                     .authorizeHttpRequests(auth -> auth
+                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                             .requestMatchers(
                                     "/register",
                                     "/verifyRegistrationToken",
@@ -52,7 +54,10 @@ public class AuthConfig {
                 new org.springframework.web.cors.CorsConfiguration();
 
         config.setAllowedOrigins(
-                java.util.List.of("http://localhost:3000")
+                java.util.List.of(
+                        "http://localhost:3000",
+                        "https://sudbury-city-ui.vercel.app"
+                )
         );
         config.setAllowedMethods(
                 java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
