@@ -1,5 +1,6 @@
 server:
-  port: ${SERVER_PORT}
+  # Render provides PORT. Locally you can set SERVER_PORT.
+  port: ${PORT:${SERVER_PORT}}
 
 spring:
   datasource:
@@ -12,22 +13,6 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        debug: ${MAIL_DEBUG}
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-          from: ${MAIL_FROM:${MAIL_USERNAME}}
-          ssl:
-            trust: ${MAIL_SSL_TRUST:${MAIL_HOST}}
-
 springdoc:
   swagger-ui:
     path: /swagger-ui
@@ -39,4 +24,12 @@ jwt:
 
 app:
   verification:
+    # Local default; override in cloud with VERIFICATION_BASE_URL
     base-url: ${VERIFICATION_BASE_URL}
+  email:
+    brevo:
+      # Free tier (HTTPS). Use a Brevo API v3 key (usually starts with: xkeysib-...)
+      # Do NOT put real keys in this file; set them as env vars.
+      api-key: ${BREVO_API_KEY}
+      from-email: ${BREVO_FROM_EMAIL}
+      from-name: ${BREVO_FROM_NAME}

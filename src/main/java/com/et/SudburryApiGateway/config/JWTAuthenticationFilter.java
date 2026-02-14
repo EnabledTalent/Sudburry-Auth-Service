@@ -30,30 +30,22 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
           throws ServletException, IOException {
     String authHeader = request.getHeader("Authorization");
-    String path = request.getRequestURI();
 
-    if (path.startsWith("/swagger-ui")
-            || path.startsWith("/v3/api-docs")
-            || path.startsWith("/swagger-ui.html")
-            || path.startsWith("/webjars")
-            || path.startsWith("/register")
-            || path.startsWith("/signin")
-            || path.startsWith("/verifyRegistrationToken")) {
+    // If there's no Authorization header, just continue.
+    // Spring Security will enforce authentication where required, and permitAll endpoints
+    // (like /register) will work without being blocked by this filter.
+    if (authHeader == null || authHeader.isBlank()) {
       filterChain.doFilter(request, response);
       return;
     }
 
-    if (authHeader == null) {
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().write("Missing Authorization header");
+    // Extract token from "Bearer <token>" format
+    if (!authHeader.startsWith("Bearer ")) {
+      filterChain.doFilter(request, response);
       return;
     }
 
-    // Extract token from "Bearer <token>" format
-    String jwtToken = authHeader;
-    if (authHeader.startsWith("Bearer ")) {
-      jwtToken = authHeader.substring(7);
-    }
+    String jwtToken = authHeader.substring(7);
 
     // VALIDATE THE TOKEN
     final Claims claims;
@@ -73,7 +65,8 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
     String username = claims.getSubject();
     String role = claims.get("role", String.class);
-    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+    String authority = role == null ? "ROLE_USER" : (role.startsWith("ROLE_") ? role : "ROLE_" + role);
+    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authority));
     UsernamePasswordAuthenticationToken authentication =
             new UsernamePasswordAuthenticationToken(username, null, authorities);
 
@@ -86,6 +79,13 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
-    return path.contains("register") || path.contains("signin") || path.contains("verifyRegistrationToken");
+    return path.startsWith("/swagger-ui")
+            || path.startsWith("/v3/api-docs")
+            || path.startsWith("/swagger-ui.html")
+            || path.startsWith("/webjars")
+            || path.startsWith("/register")
+            || path.startsWith("/signin")
+            || path.startsWith("/verifyRegistrationToken")
+            || path.startsWith("/error");
   }
 }

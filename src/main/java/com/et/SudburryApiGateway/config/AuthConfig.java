@@ -2,12 +2,16 @@ package com.et.SudburryApiGateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 
 @Configuration
@@ -20,28 +24,59 @@ public class AuthConfig {
     }
 
     @Bean
-    public SecurityFilterChain httpSecurityFilterChain(HttpSecurity http) {
+    @Order(1)
+    public SecurityFilterChain publicEndpointsFilterChain(HttpSecurity http) {
         try {
             http.cors() // 👈 IMPORTANT
                     .and()
                     .csrf(csrf -> csrf.disable())
+                    // API should be stateless (no JSESSIONID, no /login redirects)
+                    .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    // Ensure these endpoints always bypass auth (even if client sends bad Authorization header)
+                    .securityMatcher(
+                            "/register**",
+                            "/register/**",
+                            "/signin**",
+                            "/signin/**",
+                            "/verifyRegistrationToken**",
+                            "/verifyRegistrationToken/**",
+                            "/swagger-ui/**",
+                            "/v3/api-docs/**",
+                            "/swagger-ui.html"
+                    )
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .anyRequest().permitAll()
+                    )
+                    .formLogin(form -> form.disable())
+                    .httpBasic(basic -> basic.disable())
+                    .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+
+            return http.build();
+        } catch (Exception e) {
+            throw new RuntimeException("Error configuring security filter chain", e);
+        }
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain protectedApiFilterChain(HttpSecurity http) {
+        try {
+            http.cors()
+                    .and()
+                    .csrf(csrf -> csrf.disable())
+                    .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                             .requestMatchers(
-                                    "/register",
-                                    "/verifyRegistrationToken",
-                                    "/signin",
-                                    "/test",
-                                    "/swagger-ui/**",
-                                    "/v3/api-docs/**",
-                                    "/swagger-ui.html"
+                                    "/logout",
+                                    "/test"
                             ).permitAll()
                             .anyRequest().authenticated()
                     )
-                    .formLogin(form -> form
-                            .defaultSuccessUrl("/test", true)
-                            .permitAll()
-                    );
+                    .formLogin(form -> form.disable())
+                    .httpBasic(basic -> basic.disable())
+                    .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
 
             return http.build();
         } catch (Exception e) {
