@@ -1,11 +1,11 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT}
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/springdb
-    username: postgres
-    password: root
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
@@ -13,20 +13,20 @@ spring:
     show-sql: true
 
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
-        debug: ${MAIL_DEBUG:false}
+        debug: ${MAIL_DEBUG}
         smtp:
           auth: true
           starttls:
             enable: true
-          from: ${MAIL_FROM:${MAIL_USERNAME:anuragchmp@gmail.com}}
+          from: ${MAIL_FROM:${MAIL_USERNAME}}
           ssl:
-            trust: ${MAIL_SSL_TRUST:${MAIL_HOST:smtp.gmail.com}}
+            trust: ${MAIL_SSL_TRUST:${MAIL_HOST}}
 
 springdoc:
   swagger-ui:
@@ -35,8 +35,8 @@ springdoc:
     path: /v3/api-docs
 
 jwt:
-  secret: secretKeyAirtribeTestingTokensecretKeyAirtribeTestingToken
+  secret: ${JWT_SECRET}
 
 app:
   verification:
-    base-url: ${VERIFICATION_BASE_URL:http://localhost:8081}
+    base-url: ${VERIFICATION_BASE_URL}
