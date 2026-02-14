@@ -20,14 +20,25 @@ public class User {
 
   private boolean isEnabled;
 
+  private String name;
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
   private String role;
 
-  public User(Long userId, String username, String password, boolean isEnabled, String role) {
+  public User(Long userId, String username, String password, boolean isEnabled, String role,String name ) {
     this.userId = userId;
     this.username = username;
     this.password = password;
     this.isEnabled = isEnabled;
     this.role = role;
+    this.name=name;
   }
 
   public User() {

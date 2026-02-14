@@ -1,12 +1,42 @@
+server:
+  port: 8081
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/springdb
     username: postgres
     password: root
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-server:
-  port: ${PORT:8085}
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        debug: ${MAIL_DEBUG:false}
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          from: ${MAIL_FROM:${MAIL_USERNAME:anuragchmp@gmail.com}}
+          ssl:
+            trust: ${MAIL_SSL_TRUST:${MAIL_HOST:smtp.gmail.com}}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+  api-docs:
+    path: /v3/api-docs
+
+jwt:
+  secret: secretKeyAirtribeTestingTokensecretKeyAirtribeTestingToken
+
+app:
+  verification:
+    base-url: ${VERIFICATION_BASE_URL:http://localhost:8081}

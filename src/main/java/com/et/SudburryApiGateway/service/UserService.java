@@ -1,7 +1,9 @@
 package com.et.SudburryApiGateway.service;
 
 import java.util.Date;
+import java.util.Locale;
 
+import com.et.SudburryApiGateway.entity.LoginResponse;
 import com.et.SudburryApiGateway.entity.User;
 import com.et.SudburryApiGateway.entity.UserDTO;
 import com.et.SudburryApiGateway.entity.VerificationToken;
@@ -34,9 +36,21 @@ public class UserService implements UserDetailsService {
     user.setEnabled(false);
     user.setUsername(userDTO.getUsername());
     user.setPassword(_passwordEncoder.encode(userDTO.getPassword()));
-    user.setRole("ADMIN");
+    user.setName(userDTO.getName());
+    user.setRole(normalizeRole(userDTO.getRole()));
     return _userRepository.save(user);
 
+  }
+
+  private static String normalizeRole(String rawRole) {
+    if (rawRole == null) return "USER";
+    String r = rawRole.trim();
+    if (r.isBlank()) return "USER";
+    r = r.toUpperCase(Locale.ROOT);
+    if (r.startsWith("ROLE_")) {
+      r = r.substring("ROLE_".length());
+    }
+    return r;
   }
 
   @Override
@@ -47,11 +61,11 @@ public class UserService implements UserDetailsService {
     }
 
     return org.springframework.security.core.userdetails.User
-        .withUsername(registeredUser.getUsername())
-        .password(registeredUser.getPassword())
-        .roles(registeredUser.getRole())
-        .disabled(!registeredUser.isEnabled())
-        .build();
+            .withUsername(registeredUser.getUsername())
+            .password(registeredUser.getPassword())
+            .roles(registeredUser.getRole())
+            .disabled(!registeredUser.isEnabled())
+            .build();
 
 
   }
@@ -88,22 +102,29 @@ public class UserService implements UserDetailsService {
     _verificationTokenRepository.delete(token);
   }
 
-  public String loginUser(String username, String password) {
+  public LoginResponse loginUser(String username, String password) {
     User user = _userRepository.findByUsername(username);
     if (user == null) {
-      return "User not found";
+      throw new IllegalArgumentException("User not found");
     }
 
     if (!user.isEnabled()) {
-      return "User not enabled. Please verify your email.";
+      throw new IllegalStateException("User not enabled. Please verify your email.");
     }
 
     String passwordStored = user.getPassword();
     Boolean isPasswordMatch = _passwordEncoder.matches(password, passwordStored);
     if (!isPasswordMatch) {
-      return "Invalid password";
+      throw new IllegalArgumentException("Invalid password");
     }
-    return TokenUtil.generateJwtToken(user);
+
+    String jwt = TokenUtil.generateJwtToken(user);
+    return new LoginResponse(
+            new LoginResponse.TokenEnvelope(
+                    jwt,
+                    new LoginResponse.RoleEnvelope(user.getRole())
+            )
+    );
 
   }
 }

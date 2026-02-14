@@ -1,5 +1,7 @@
+
 package com.et.SudburryApiGateway.config;
 
+import com.et.SudburryApiGateway.service.TokenRevocationService;
 import com.et.SudburryApiGateway.util.TokenUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -9,8 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-import org.hibernate.annotations.Comment;
-import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,10 +22,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
+
+  @Autowired
+  private TokenRevocationService tokenRevocationService;
+
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
-    String jwtToken = request.getHeader("Authorization");
+          throws ServletException, IOException {
+    String authHeader = request.getHeader("Authorization");
     String path = request.getRequestURI();
 
     if (path.startsWith("/swagger-ui")
@@ -38,25 +43,39 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
 
-    if (jwtToken == null) {
+    if (authHeader == null) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response.getWriter().write("Missing Authorization header");
       return;
     }
 
+    // Extract token from "Bearer <token>" format
+    String jwtToken = authHeader;
+    if (authHeader.startsWith("Bearer ")) {
+      jwtToken = authHeader.substring(7);
+    }
+
     // VALIDATE THE TOKEN
-    Claims claims = TokenUtil.validateSignedToken(jwtToken);
-    if (claims == null) {
+    final Claims claims;
+    try {
+      claims = TokenUtil.validateSignedToken(jwtToken);
+    } catch (Exception e) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response.getWriter().write("Invalid or expired JWT token");
       return;
     }
 
+    if (tokenRevocationService != null && tokenRevocationService.isTokenRevoked(jwtToken)) {
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.getWriter().write("JWT token has been revoked");
+      return;
+    }
+
     String username = claims.getSubject();
-    String role = claims.get("roles", String.class);
+    String role = claims.get("role", String.class);
     List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
     UsernamePasswordAuthenticationToken authentication =
-        new UsernamePasswordAuthenticationToken(username, null, authorities);
+            new UsernamePasswordAuthenticationToken(username, null, authorities);
 
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -70,5 +89,3 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     return path.contains("register") || path.contains("signin") || path.contains("verifyRegistrationToken");
   }
 }
-
-
