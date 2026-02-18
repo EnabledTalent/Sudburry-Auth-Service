@@ -1,7 +1,7 @@
 package com.et.SudburryApiGateway.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -11,9 +11,7 @@ import jakarta.persistence.Table;
 public class User {
 
   @Id
-  @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
-  private Long userId;
-
+  @Column(nullable = false, length = 320)
   private String username;
 
   private String password;
@@ -32,8 +30,7 @@ public class User {
 
   private String role;
 
-  public User(Long userId, String username, String password, boolean isEnabled, String role,String name ) {
-    this.userId = userId;
+  public User(String username, String password, boolean isEnabled, String role, String name) {
     this.username = username;
     this.password = password;
     this.isEnabled = isEnabled;
@@ -43,14 +40,6 @@ public class User {
 
   public User() {
 
-  }
-
-  public Long getUserId() {
-    return userId;
-  }
-
-  public void setUserId(Long userId) {
-    this.userId = userId;
   }
 
   public String getUsername() {

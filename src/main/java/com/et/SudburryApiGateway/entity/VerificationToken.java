@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import java.util.Date;
 
@@ -20,6 +21,7 @@ public class VerificationToken {
   private Date expiryDate;
 
   @OneToOne
+  @JoinColumn(name = "user_username", referencedColumnName = "username", nullable = false, unique = true)
   private User user;
 
   public VerificationToken(long id, String token, Date expiryDate, User user) {
