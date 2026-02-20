@@ -32,9 +32,19 @@ public class UserService implements UserDetailsService {
   private PasswordEncoder _passwordEncoder;
 
   public User registerUser(UserDTO userDTO) {
+    if (userDTO == null || userDTO.getUsername() == null || userDTO.getUsername().trim().isEmpty()) {
+      throw new IllegalArgumentException("Username (email) is required");
+    }
+
+    String normalizedUsername = userDTO.getUsername().trim().toLowerCase(Locale.ROOT);
+
+    if (_userRepository.existsById(normalizedUsername)) {
+      throw new IllegalStateException("Username already exists");
+    }
+
     User user = new User();
     user.setEnabled(false);
-    user.setUsername(userDTO.getUsername());
+    user.setUsername(normalizedUsername);
     user.setPassword(_passwordEncoder.encode(userDTO.getPassword()));
     user.setName(userDTO.getName());
     user.setRole(normalizeRole(userDTO.getRole()));
@@ -55,7 +65,8 @@ public class UserService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    User registeredUser = _userRepository.findByUsername(username);
+    String normalizedUsername = username == null ? null : username.trim().toLowerCase(Locale.ROOT);
+    User registeredUser = _userRepository.findByUsername(normalizedUsername);
     if (registeredUser == null) {
       throw new UsernameNotFoundException("User not found with username: " + username);
     }
@@ -103,7 +114,8 @@ public class UserService implements UserDetailsService {
   }
 
   public LoginResponse loginUser(String username, String password) {
-    User user = _userRepository.findByUsername(username);
+    String normalizedUsername = username == null ? null : username.trim().toLowerCase(Locale.ROOT);
+    User user = _userRepository.findByUsername(normalizedUsername);
     if (user == null) {
       throw new IllegalArgumentException("User not found");
     }

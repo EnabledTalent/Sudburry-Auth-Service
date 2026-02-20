@@ -45,17 +45,25 @@ public class UserController {
   private String verificationBaseUrl;
 
   @PostMapping("/register")
-  public User registerUser(@RequestBody UserDTO userDTO) {
+  public ResponseEntity<?> registerUser(@RequestBody UserDTO userDTO) {
+    try {
+      User user = _userService.registerUser(userDTO);
+      String verificationToken = java.util.UUID.randomUUID().toString();
+      String verificationTokenUrl = verificationBaseUrl + "/verifyRegistrationToken?token=" + verificationToken;
+      _userService.saveVerificationToken(user, verificationToken);
 
-    User user =  _userService.registerUser(userDTO);
-    String verificationToken = java.util.UUID.randomUUID().toString();
-    String verificationTokenUrl = verificationBaseUrl + "/verifyRegistrationToken?token=" + verificationToken;
-    _userService.saveVerificationToken(user, verificationToken);
+      // Send mail with the verification URL (username is treated as the email)
+      emailService.sendVerificationEmail(user.getUsername(), userDTO.getName(), verificationTokenUrl);
 
-    // Send mail with the verification URL (username is treated as the email)
-    emailService.sendVerificationEmail(user.getUsername(), userDTO.getName(), verificationTokenUrl);
-
-    return user;
+      return ResponseEntity.status(HttpStatus.CREATED).body(user);
+    } catch (IllegalStateException e) {
+      // e.g. username already exists
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration failed: " + e.getMessage());
+    }
   }
 
   @GetMapping("/verifyRegistrationToken")
