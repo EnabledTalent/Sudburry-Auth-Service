@@ -20,6 +20,9 @@ public class User {
 
   private String name;
 
+  @Column(nullable = false, name = "first_time_login")
+  private Boolean firstTimeLogin = true;
+
   public String getName() {
     return name;
   }
@@ -64,6 +67,14 @@ public class User {
 
   public void setEnabled(boolean enabled) {
     isEnabled = enabled;
+  }
+
+  public boolean isFirstTimeLogin() {
+    return firstTimeLogin == null || firstTimeLogin;
+  }
+
+  public void setFirstTimeLogin(boolean firstTimeLogin) {
+    this.firstTimeLogin = firstTimeLogin;
   }
 
   public String getRole() {

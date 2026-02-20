@@ -48,6 +48,7 @@ public class UserService implements UserDetailsService {
     user.setPassword(_passwordEncoder.encode(userDTO.getPassword()));
     user.setName(userDTO.getName());
     user.setRole(normalizeRole(userDTO.getRole()));
+    user.setFirstTimeLogin(true);
     return _userRepository.save(user);
 
   }
@@ -131,11 +132,19 @@ public class UserService implements UserDetailsService {
     }
 
     String jwt = TokenUtil.generateJwtToken(user);
+
+    boolean firstTimeLogin = user.isFirstTimeLogin();
+    if (firstTimeLogin) {
+      user.setFirstTimeLogin(false);
+      _userRepository.save(user);
+    }
+
     return new LoginResponse(
             new LoginResponse.TokenEnvelope(
                     jwt,
                     new LoginResponse.RoleEnvelope(user.getRole())
-            )
+            ),
+            firstTimeLogin
     );
 
   }

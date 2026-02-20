@@ -3,6 +3,7 @@ package com.et.SudburryApiGateway.entity;
 public class LoginResponse {
 
   private TokenEnvelope token;
+  private boolean firstTimeLogin;
 
   public LoginResponse() {
   }
@@ -11,12 +12,25 @@ public class LoginResponse {
     this.token = token;
   }
 
+  public LoginResponse(TokenEnvelope token, boolean firstTimeLogin) {
+    this.token = token;
+    this.firstTimeLogin = firstTimeLogin;
+  }
+
   public TokenEnvelope getToken() {
     return token;
   }
 
   public void setToken(TokenEnvelope token) {
     this.token = token;
+  }
+
+  public boolean isFirstTimeLogin() {
+    return firstTimeLogin;
+  }
+
+  public void setFirstTimeLogin(boolean firstTimeLogin) {
+    this.firstTimeLogin = firstTimeLogin;
   }
 
   public static class TokenEnvelope {

@@ -148,7 +148,8 @@ public class UserController {
       UserInfoResponse response = new UserInfoResponse(
               username,
               user.getName(),
-              role
+              role,
+              user.isFirstTimeLogin()
       );
 
       return ResponseEntity.ok(response);
