@@ -91,7 +91,7 @@ public class AuthConfig {
         config.setAllowedOrigins(
                 java.util.List.of(
                         "http://localhost:3000",
-                        "https://sudbury-city-ui.vercel.app"
+                        "https://app.sudburyjobs.ca"
                 )
         );
         config.setAllowedMethods(

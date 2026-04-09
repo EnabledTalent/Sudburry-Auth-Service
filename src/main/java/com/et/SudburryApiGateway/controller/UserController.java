@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(
         origins = {
                 "http://localhost:3000",
-                "https://sudbury-city-ui.vercel.app"
+                "https://app.sudburyjobs.ca"
         },
         allowedHeaders = "*",
         methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS }
