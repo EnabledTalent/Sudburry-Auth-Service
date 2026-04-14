@@ -51,6 +51,36 @@ public class EmailService {
     sendViaBrevo(toEmail, subject, text);
   }
 
+  /**
+   * Sends a one-time code for forgot-password flow.
+   */
+  public void sendPasswordResetOtp(String toEmail, String name, String otp) {
+    if (toEmail == null || toEmail.isBlank()) {
+      throw new IllegalArgumentException("User email is missing");
+    }
+    String displayName = (name == null || name.isBlank()) ? "there" : name;
+    String subject = "Your password reset code";
+    String text =
+            "Hi " + displayName + ",\n\n"
+                    + "Your one-time password reset code is: " + otp + "\n\n"
+                    + "It expires in 15 minutes. If you did not request this, you can ignore this email.\n";
+
+    if (brevoApiKey == null || brevoApiKey.isBlank() || brevoFromEmail == null || brevoFromEmail.isBlank()) {
+      System.out.println("Brevo email not sent (BREVO_API_KEY/BREVO_FROM_EMAIL missing). Password reset OTP: " + otp);
+      return;
+    }
+
+    String key = brevoApiKey.trim();
+    if (key.startsWith("xsmtpsib-")) {
+      throw new IllegalStateException(
+              "Brevo key looks like an SMTP key (xsmtpsib-...). " +
+                      "For HTTP API you must use an API v3 key (xkeysib-...)."
+      );
+    }
+
+    sendViaBrevo(toEmail, subject, text);
+  }
+
   private void sendViaBrevo(String toEmail, String subject, String text) {
     try {
       HttpClient client = HttpClient.newHttpClient();

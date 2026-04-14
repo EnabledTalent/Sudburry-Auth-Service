@@ -1,6 +1,8 @@
 package com.et.SudburryApiGateway.controller;
 
 
+import com.et.SudburryApiGateway.entity.ForgotPasswordRequest;
+import com.et.SudburryApiGateway.entity.ResetPasswordWithOtpRequest;
 import com.et.SudburryApiGateway.entity.User;
 import com.et.SudburryApiGateway.entity.UserDTO;
 import com.et.SudburryApiGateway.entity.UserInfoResponse;
@@ -74,6 +76,47 @@ public class UserController {
       return "Token verification successful, user enabled. Please login to proceed.";
     } else {
       return "Token verification failed. Please try again.";
+    }
+  }
+
+  /**
+   * Step 1: request a 6-digit OTP sent to the user's email (username = email).
+   * Response body is generic whether or not the account exists (avoid email enumeration).
+   */
+  @PostMapping("/forgot-password")
+  public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest body) {
+    try {
+      if (body == null || body.getEmail() == null || body.getEmail().isBlank()) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is required");
+      }
+      _userService.requestPasswordResetOtp(body.getEmail());
+      return ResponseEntity.ok(
+              "If an account exists for that email, a reset code has been sent."
+      );
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body("Request failed: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Step 2: verify OTP and set a new password.
+   */
+  @PostMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordWithOtpRequest body) {
+    try {
+      if (body == null) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request body is required");
+      }
+      _userService.resetPasswordWithOtp(body.getEmail(), body.getOtp(), body.getNewPassword());
+      return ResponseEntity.ok("Password has been reset. You can sign in with your new password.");
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body("Reset failed: " + e.getMessage());
     }
   }
 

@@ -1,12 +1,16 @@
 package com.et.SudburryApiGateway.service;
 
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Optional;
 
 import com.et.SudburryApiGateway.entity.LoginResponse;
+import com.et.SudburryApiGateway.entity.PasswordResetOtp;
 import com.et.SudburryApiGateway.entity.User;
 import com.et.SudburryApiGateway.entity.UserDTO;
 import com.et.SudburryApiGateway.entity.VerificationToken;
+import com.et.SudburryApiGateway.repository.PasswordResetOtpRepository;
 import com.et.SudburryApiGateway.repository.UserRepository;
 import com.et.SudburryApiGateway.repository.VerificationTokenRepository;
 import com.et.SudburryApiGateway.util.TokenUtil;
@@ -16,6 +20,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -29,7 +34,16 @@ public class UserService implements UserDetailsService {
   private VerificationTokenRepository _verificationTokenRepository;
 
   @Autowired
+  private PasswordResetOtpRepository _passwordResetOtpRepository;
+
+  @Autowired
+  private EmailService emailService;
+
+  @Autowired
   private PasswordEncoder _passwordEncoder;
+
+  private static final SecureRandom OTP_RANDOM = new SecureRandom();
+  private static final long PASSWORD_RESET_OTP_TTL_MS = 15 * 60 * 1000L;
 
   public User registerUser(UserDTO userDTO) {
     if (userDTO == null || userDTO.getUsername() == null || userDTO.getUsername().trim().isEmpty()) {
@@ -147,5 +161,72 @@ public class UserService implements UserDetailsService {
             firstTimeLogin
     );
 
+  }
+
+  /**
+   * If the user exists, generates a 6-digit OTP, stores its hash, and emails the code.
+   * Does nothing for unknown emails (caller should still return a generic success message).
+   */
+  @Transactional
+  public void requestPasswordResetOtp(String rawEmail) {
+    if (rawEmail == null || rawEmail.trim().isEmpty()) {
+      throw new IllegalArgumentException("Email is required");
+    }
+    String normalized = rawEmail.trim().toLowerCase(Locale.ROOT);
+    User user = _userRepository.findByUsername(normalized);
+    if (user == null) {
+      return;
+    }
+
+    String otp = String.format("%06d", 100_000 + OTP_RANDOM.nextInt(900_000));
+    String otpHash = _passwordEncoder.encode(otp);
+    Date expiry = new Date(System.currentTimeMillis() + PASSWORD_RESET_OTP_TTL_MS);
+
+    _passwordResetOtpRepository.deleteByUsername(normalized);
+    PasswordResetOtp row = new PasswordResetOtp(normalized, otpHash, expiry);
+    _passwordResetOtpRepository.save(row);
+
+    emailService.sendPasswordResetOtp(user.getUsername(), user.getName(), otp);
+  }
+
+  @Transactional
+  public void resetPasswordWithOtp(String rawEmail, String otp, String newPassword) {
+    if (rawEmail == null || rawEmail.trim().isEmpty()) {
+      throw new IllegalArgumentException("Email is required");
+    }
+    if (otp == null || otp.trim().isEmpty()) {
+      throw new IllegalArgumentException("OTP is required");
+    }
+    if (newPassword == null || newPassword.length() < 8) {
+      throw new IllegalArgumentException("New password must be at least 8 characters");
+    }
+
+    String normalized = rawEmail.trim().toLowerCase(Locale.ROOT);
+    String otpDigits = otp.trim().replaceAll("\\s+", "");
+
+    Optional<PasswordResetOtp> rowOpt = _passwordResetOtpRepository.findByUsername(normalized);
+    if (rowOpt.isEmpty()) {
+      throw new IllegalArgumentException("Invalid or expired code");
+    }
+
+    PasswordResetOtp row = rowOpt.get();
+    if (System.currentTimeMillis() > row.getExpiryDate().getTime()) {
+      _passwordResetOtpRepository.delete(row);
+      throw new IllegalArgumentException("Invalid or expired code");
+    }
+
+    if (!_passwordEncoder.matches(otpDigits, row.getOtpHash())) {
+      throw new IllegalArgumentException("Invalid or expired code");
+    }
+
+    User user = _userRepository.findByUsername(normalized);
+    if (user == null) {
+      _passwordResetOtpRepository.delete(row);
+      throw new IllegalArgumentException("Invalid or expired code");
+    }
+
+    user.setPassword(_passwordEncoder.encode(newPassword));
+    _userRepository.save(user);
+    _passwordResetOtpRepository.delete(row);
   }
 }

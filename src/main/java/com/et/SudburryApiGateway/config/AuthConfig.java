@@ -40,6 +40,10 @@ public class AuthConfig {
                             "/signin/**",
                             "/verifyRegistrationToken**",
                             "/verifyRegistrationToken/**",
+                            "/forgot-password**",
+                            "/forgot-password/**",
+                            "/reset-password**",
+                            "/reset-password/**",
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
                             "/swagger-ui.html"
