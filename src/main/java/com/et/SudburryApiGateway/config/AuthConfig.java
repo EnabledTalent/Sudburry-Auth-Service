@@ -42,6 +42,8 @@ public class AuthConfig {
                             "/verifyRegistrationToken/**",
                             "/forgot-password**",
                             "/forgot-password/**",
+                            "/resend-password-otp**",
+                            "/resend-password-otp/**",
                             "/reset-password**",
                             "/reset-password/**",
                             "/swagger-ui/**",

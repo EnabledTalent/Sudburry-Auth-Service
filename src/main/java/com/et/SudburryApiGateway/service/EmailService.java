@@ -18,7 +18,7 @@ public class EmailService {
   @Value("${app.email.brevo.from-email:}")
   private String brevoFromEmail;
 
-  @Value("${app.email.brevo.from-name:Sudbury City}")
+  @Value("${app.email.brevo.from-name:Sudbury Jobs}")
   private String brevoFromName;
 
   public void sendVerificationEmail(String toEmail, String name, String verificationUrl) {

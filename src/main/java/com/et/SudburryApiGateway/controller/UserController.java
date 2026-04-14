@@ -102,6 +102,28 @@ public class UserController {
   }
 
   /**
+   * Resend password reset OTP. Same behaviour as POST /forgot-password: generates a new code,
+   * replaces any previous OTP for that email, and sends the email again (if the account exists).
+   */
+  @PostMapping("/resend-password-otp")
+  public ResponseEntity<?> resendPasswordOtp(@RequestBody ForgotPasswordRequest body) {
+    try {
+      if (body == null || body.getEmail() == null || body.getEmail().isBlank()) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is required");
+      }
+      _userService.requestPasswordResetOtp(body.getEmail());
+      return ResponseEntity.ok(
+              "If an account exists for that email, a reset code has been sent."
+      );
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body("Request failed: " + e.getMessage());
+    }
+  }
+
+  /**
    * Step 2: verify OTP and set a new password.
    */
   @PostMapping("/reset-password")
